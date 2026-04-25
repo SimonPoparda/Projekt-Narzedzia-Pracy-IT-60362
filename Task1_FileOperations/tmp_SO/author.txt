@@ -1,0 +1,7 @@
+Author Information
+Name and Surname: [Your Name Here]
+Date: [Execution Date]
+Time: [Execution Time]
+
+===== Current Directory Listing =====
+[Directory listing will be appended here by the batch script]
