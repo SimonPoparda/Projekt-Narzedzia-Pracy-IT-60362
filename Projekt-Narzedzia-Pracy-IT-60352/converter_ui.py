@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 
+from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QLineEdit, QFileDialog, QMessageBox
@@ -11,14 +12,31 @@ from converter import convert, ConverterError
 FILE_FILTER = "Data files (*.json *.xml *.yml *.yaml)"
 
 
+class ConvertThread(QThread):
+    succeeded = pyqtSignal(str)
+    failed = pyqtSignal(str)
+
+    def __init__(self, src: Path, dst: Path):
+        super().__init__()
+        self.src = src
+        self.dst = dst
+
+    def run(self):
+        try:
+            convert(self.src, self.dst)
+            self.succeeded.emit(f"Done: '{self.src}' → '{self.dst}'")
+        except ConverterError as e:
+            self.failed.emit(str(e))
+
+
 class ConverterWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Format Converter")
         self.setMinimumWidth(520)
+        self._thread = None
 
         layout = QVBoxLayout(self)
-
         layout.addLayout(self._file_row("Input:", "input.json / .xml / .yml", self._browse_input))
         layout.addLayout(self._file_row("Output:", "output.json / .xml / .yml", self._browse_output))
 
@@ -60,12 +78,23 @@ class ConverterWindow(QWidget):
         if not src or not dst:
             self.status.setText("Please select both input and output files.")
             return
-        try:
-            convert(Path(src), Path(dst))
-            self.status.setText(f"Done: '{src}' → '{dst}'")
-        except ConverterError as e:
-            self.status.setText(f"Error: {e}")
-            QMessageBox.critical(self, "Conversion Error", str(e))
+
+        self.convert_btn.setEnabled(False)
+        self.status.setText("Converting…")
+
+        self._thread = ConvertThread(Path(src), Path(dst))
+        self._thread.succeeded.connect(self._on_success)
+        self._thread.failed.connect(self._on_error)
+        self._thread.start()
+
+    def _on_success(self, message: str):
+        self.status.setText(message)
+        self.convert_btn.setEnabled(True)
+
+    def _on_error(self, message: str):
+        self.status.setText(f"Error: {message}")
+        QMessageBox.critical(self, "Conversion Error", message)
+        self.convert_btn.setEnabled(True)
 
 
 if __name__ == '__main__':

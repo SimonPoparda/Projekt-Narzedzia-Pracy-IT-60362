@@ -27,10 +27,15 @@ jobs:
       - name: Install dependencies
         run: .\installResources.ps1
 
-      - name: Build executable
+      - name: Build CLI executable
         run: pyinstaller --onefile converter.py
+
+      - name: Build UI executable
+        run: pyinstaller --onefile --noconsole converter_ui.py
 
       - uses: actions/upload-artifact@v4
         with:
           name: converter-exe
-          path: Projekt-Narzedzia-Pracy-IT-60352/dist/converter.exe
+          path: |
+            Projekt-Narzedzia-Pracy-IT-60352/dist/converter.exe
+            Projekt-Narzedzia-Pracy-IT-60352/dist/converter_ui.exe
