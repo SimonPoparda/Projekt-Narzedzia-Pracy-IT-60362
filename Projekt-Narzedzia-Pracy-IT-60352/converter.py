@@ -12,11 +12,16 @@ if sys.version_info < (3, 9):
 SUPPORTED_FORMATS = {'.json', '.xml', '.yml', '.yaml'}
 
 
+class ConverterError(Exception):
+    pass
+
+
 def get_format(path: Path) -> str:
     ext = path.suffix.lower()
     if ext not in SUPPORTED_FORMATS:
-        print(f"Error: unsupported format '{ext}'. Supported: {', '.join(sorted(SUPPORTED_FORMATS))}")
-        sys.exit(1)
+        raise ConverterError(
+            f"Unsupported format '{ext}'. Supported: {', '.join(sorted(SUPPORTED_FORMATS))}"
+        )
     return ext
 
 
@@ -25,11 +30,9 @@ def load_json(path: Path) -> object:
         with open(path, encoding='utf-8') as f:
             return json.load(f)
     except json.JSONDecodeError as e:
-        print(f"Error: invalid JSON in '{path}': {e}")
-        sys.exit(1)
+        raise ConverterError(f"Invalid JSON in '{path}': {e}")
     except OSError as e:
-        print(f"Error: cannot read '{path}': {e}")
-        sys.exit(1)
+        raise ConverterError(f"Cannot read '{path}': {e}")
 
 
 def load_yaml(path: Path) -> object:
@@ -37,11 +40,9 @@ def load_yaml(path: Path) -> object:
         with open(path, encoding='utf-8') as f:
             return yaml.safe_load(f)
     except yaml.YAMLError as e:
-        print(f"Error: invalid YAML in '{path}': {e}")
-        sys.exit(1)
+        raise ConverterError(f"Invalid YAML in '{path}': {e}")
     except OSError as e:
-        print(f"Error: cannot read '{path}': {e}")
-        sys.exit(1)
+        raise ConverterError(f"Cannot read '{path}': {e}")
 
 
 def _elem_to_dict(elem: ET.Element) -> object:
@@ -67,7 +68,7 @@ def _elem_to_dict(elem: ET.Element) -> object:
     if elem.text and elem.text.strip():
         result['#text'] = elem.text.strip()
 
-    # ponytail: elem.tail (text after closing tag) is not captured — known limitation for mixed-content XML
+    # ponytail: elem.tail (text after closing tag) not captured — known limitation for mixed-content XML
     return result
 
 
@@ -75,11 +76,9 @@ def load_xml(path: Path) -> object:
     try:
         tree = ET.parse(path)
     except ET.ParseError as e:
-        print(f"Error: invalid XML in '{path}': {e}")
-        sys.exit(1)
+        raise ConverterError(f"Invalid XML in '{path}': {e}")
     except OSError as e:
-        print(f"Error: cannot read '{path}': {e}")
-        sys.exit(1)
+        raise ConverterError(f"Cannot read '{path}': {e}")
     root = tree.getroot()
     return {root.tag: _elem_to_dict(root)}
 
@@ -89,8 +88,7 @@ def save_json(data: object, path: Path) -> None:
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
     except OSError as e:
-        print(f"Error: cannot write '{path}': {e}")
-        sys.exit(1)
+        raise ConverterError(f"Cannot write '{path}': {e}")
 
 
 def save_yaml(data: object, path: Path) -> None:
@@ -98,8 +96,7 @@ def save_yaml(data: object, path: Path) -> None:
         with open(path, 'w', encoding='utf-8') as f:
             yaml.dump(data, f, allow_unicode=True, default_flow_style=False)
     except OSError as e:
-        print(f"Error: cannot write '{path}': {e}")
-        sys.exit(1)
+        raise ConverterError(f"Cannot write '{path}': {e}")
 
 
 def _dict_to_elem(tag: str, data: object) -> ET.Element:
@@ -125,8 +122,7 @@ def _dict_to_elem(tag: str, data: object) -> ET.Element:
 
 def save_xml(data: object, path: Path) -> None:
     if not isinstance(data, dict) or len(data) != 1:
-        print("Error: XML output requires a dict with exactly one root key.")
-        sys.exit(1)
+        raise ConverterError("XML output requires a dict with exactly one root key.")
     root_tag, root_data = next(iter(data.items()))
     try:
         root_elem = _dict_to_elem(root_tag, root_data)
@@ -134,11 +130,9 @@ def save_xml(data: object, path: Path) -> None:
         ET.indent(tree)
         tree.write(path, encoding='utf-8', xml_declaration=True)
     except OSError as e:
-        print(f"Error: cannot write '{path}': {e}")
-        sys.exit(1)
+        raise ConverterError(f"Cannot write '{path}': {e}")
     except Exception as e:
-        print(f"Error: failed to serialize data to XML: {e}")
-        sys.exit(1)
+        raise ConverterError(f"Failed to serialize data to XML: {e}")
 
 
 def load_file(path: Path) -> object:
@@ -147,28 +141,29 @@ def load_file(path: Path) -> object:
         return load_json(path)
     if fmt in ('.yml', '.yaml'):
         return load_yaml(path)
-    if fmt == '.xml':
-        return load_xml(path)
-    print(f"Error: loading '{fmt}' not yet implemented.")
-    sys.exit(1)
+    return load_xml(path)
 
 
 def save_file(data: object, path: Path) -> None:
     fmt = get_format(path)
     if fmt == '.json':
         save_json(data, path)
-        return
-    if fmt in ('.yml', '.yaml'):
+    elif fmt in ('.yml', '.yaml'):
         save_yaml(data, path)
-        return
-    if fmt == '.xml':
+    else:
         save_xml(data, path)
-        return
-    print(f"Error: saving '{fmt}' not yet implemented.")
-    sys.exit(1)
 
 
-def parse_args():
+def convert(input_path: Path, output_path: Path) -> None:
+    if not input_path.is_file():
+        raise ConverterError(f"'{input_path}' does not exist or is not a file.")
+    get_format(input_path)
+    get_format(output_path)
+    data = load_file(input_path)
+    save_file(data, output_path)
+
+
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Convert data files between JSON, XML, and YAML formats.',
         usage='converter.exe input.x output.y'
@@ -176,19 +171,9 @@ def parse_args():
     parser.add_argument('input', type=Path, help='source file (json/xml/yml/yaml)')
     parser.add_argument('output', type=Path, help='destination file (json/xml/yml/yaml)')
     args = parser.parse_args()
-
-    if not args.input.is_file():
-        print(f"Error: '{args.input}' does not exist or is not a file.")
+    try:
+        convert(args.input, args.output)
+        print(f"Converted '{args.input}' -> '{args.output}'.")
+    except ConverterError as e:
+        print(f"Error: {e}")
         sys.exit(1)
-
-    get_format(args.input)
-    get_format(args.output)
-
-    return args.input, args.output
-
-
-if __name__ == '__main__':
-    input_path, output_path = parse_args()
-    data = load_file(input_path)
-    save_file(data, output_path)
-    print(f"Converted '{input_path}' -> '{output_path}'.")

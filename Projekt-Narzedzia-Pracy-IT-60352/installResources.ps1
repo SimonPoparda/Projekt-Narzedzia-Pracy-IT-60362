@@ -3,4 +3,5 @@
 # Add every 'pip install' command here as new dependencies are introduced
 
 pip install pyyaml
+pip install PyQt6
 pip install pyinstaller
