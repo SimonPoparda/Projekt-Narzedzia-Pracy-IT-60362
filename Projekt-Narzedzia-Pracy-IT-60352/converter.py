@@ -23,11 +23,25 @@ def load_json(path: Path) -> object:
         sys.exit(1)
 
 
+def save_json(data: object, path: Path) -> None:
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+
 def load_file(path: Path) -> object:
     fmt = get_format(path)
     if fmt == '.json':
         return load_json(path)
     print(f"Error: loading '{fmt}' not yet implemented.")
+    sys.exit(1)
+
+
+def save_file(data: object, path: Path) -> None:
+    fmt = get_format(path)
+    if fmt == '.json':
+        save_json(data, path)
+        return
+    print(f"Error: saving '{fmt}' not yet implemented.")
     sys.exit(1)
 
 
@@ -53,5 +67,5 @@ def parse_args():
 if __name__ == '__main__':
     input_path, output_path = parse_args()
     data = load_file(input_path)
-    print(f"Loaded {type(data).__name__} from '{input_path}'.")
-    print("Conversion not yet implemented.")
+    save_file(data, output_path)
+    print(f"Converted '{input_path}' -> '{output_path}'.")
