@@ -4,3 +4,4 @@
 
 pip install pyyaml
 
+# Note: pyinstaller is installed separately in CI (see .github/workflows/build.yml)

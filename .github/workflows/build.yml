@@ -1,0 +1,38 @@
+name: Build Converter
+
+on:
+  schedule:
+    - cron: '0 10 * * 1'
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: Projekt-Narzedzia-Pracy-IT-60352
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: .\installResources.ps1
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build executable
+        run: pyinstaller --onefile converter.py
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: converter-exe
+          path: Projekt-Narzedzia-Pracy-IT-60352/dist/converter.exe
