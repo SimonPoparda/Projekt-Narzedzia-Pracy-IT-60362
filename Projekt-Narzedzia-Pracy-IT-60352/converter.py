@@ -81,6 +81,38 @@ def save_yaml(data: object, path: Path) -> None:
         yaml.dump(data, f, allow_unicode=True, default_flow_style=False)
 
 
+def _dict_to_elem(tag: str, data: object) -> ET.Element:
+    elem = ET.Element(tag)
+    if isinstance(data, dict):
+        if '@attributes' in data:
+            for attr_key, attr_val in data['@attributes'].items():
+                elem.set(attr_key, str(attr_val))
+        if '#text' in data:
+            elem.text = str(data['#text'])
+        for key, value in data.items():
+            if key in ('@attributes', '#text'):
+                continue
+            if isinstance(value, list):
+                for item in value:
+                    elem.append(_dict_to_elem(key, item))
+            else:
+                elem.append(_dict_to_elem(key, value))
+    elif data is not None:
+        elem.text = str(data)
+    return elem
+
+
+def save_xml(data: object, path: Path) -> None:
+    if not isinstance(data, dict) or len(data) != 1:
+        print("Error: XML output requires a dict with exactly one root key.")
+        sys.exit(1)
+    root_tag, root_data = next(iter(data.items()))
+    root_elem = _dict_to_elem(root_tag, root_data)
+    tree = ET.ElementTree(root_elem)
+    ET.indent(tree)
+    tree.write(path, encoding='unicode', xml_declaration=False)
+
+
 def load_file(path: Path) -> object:
     fmt = get_format(path)
     if fmt == '.json':
@@ -100,6 +132,9 @@ def save_file(data: object, path: Path) -> None:
         return
     if fmt in ('.yml', '.yaml'):
         save_yaml(data, path)
+        return
+    if fmt == '.xml':
+        save_xml(data, path)
         return
     print(f"Error: saving '{fmt}' not yet implemented.")
     sys.exit(1)
