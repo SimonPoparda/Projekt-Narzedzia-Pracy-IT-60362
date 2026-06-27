@@ -3,6 +3,8 @@ import json
 import sys
 from pathlib import Path
 
+import yaml
+
 SUPPORTED_FORMATS = {'.json', '.xml', '.yml', '.yaml'}
 
 
@@ -23,6 +25,15 @@ def load_json(path: Path) -> object:
         sys.exit(1)
 
 
+def load_yaml(path: Path) -> object:
+    try:
+        with open(path, encoding='utf-8') as f:
+            return yaml.safe_load(f)
+    except yaml.YAMLError as e:
+        print(f"Error: invalid YAML in '{path}': {e}")
+        sys.exit(1)
+
+
 def save_json(data: object, path: Path) -> None:
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
@@ -32,6 +43,8 @@ def load_file(path: Path) -> object:
     fmt = get_format(path)
     if fmt == '.json':
         return load_json(path)
+    if fmt in ('.yml', '.yaml'):
+        return load_yaml(path)
     print(f"Error: loading '{fmt}' not yet implemented.")
     sys.exit(1)
 
