@@ -15,7 +15,6 @@ jobs:
     defaults:
       run:
         shell: pwsh
-        working-directory: Projekt-Narzedzia-Pracy-IT-60352
 
     steps:
       - uses: actions/checkout@v4
@@ -37,5 +36,5 @@ jobs:
         with:
           name: converter-exe
           path: |
-            Projekt-Narzedzia-Pracy-IT-60352/dist/converter.exe
-            Projekt-Narzedzia-Pracy-IT-60352/dist/converter_ui.exe
+            dist/converter.exe
+            dist/converter_ui.exe

@@ -68,7 +68,6 @@ def _elem_to_dict(elem: ET.Element) -> object:
     if elem.text and elem.text.strip():
         result['#text'] = elem.text.strip()
 
-    # ponytail: elem.tail (text after closing tag) not captured — known limitation for mixed-content XML
     return result
 
 
