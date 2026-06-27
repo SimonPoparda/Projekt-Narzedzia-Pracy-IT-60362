@@ -1,0 +1,10 @@
+cwiczenie2
+|   tmp
+|   |   ip
+|   |   |   ip.txt
+|   |   mac
+|   |   |   mac.txt
+|   |   |   getmac.txt
+|   |   routing
+|   |   |   routing.txt
+|   tree.txt

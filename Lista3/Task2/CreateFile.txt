@@ -1,0 +1,51 @@
+Function: CreateFile()
+Location: https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createfilea
+
+Description:
+CreateFile() creates or opens a file, file stream, directory, physical disk, volume, console buffer, tape drive, communications resource, mailslot, or named pipe. It returns a handle that can be used to access the object.
+
+Syntax:
+HANDLE CreateFileA(
+  LPCSTR                lpFileName,
+  DWORD                 dwDesiredAccess,
+  DWORD                 dwShareMode,
+  LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+  DWORD                 dwCreationDisposition,
+  DWORD                 dwFlagsAndAttributes,
+  HANDLE                hTemplateFile
+);
+
+Parameters:
+- lpFileName: Name of the file or device to create/open (string)
+- dwDesiredAccess: Access rights (GENERIC_READ, GENERIC_WRITE)
+- dwShareMode: Share mode (FILE_SHARE_READ, FILE_SHARE_WRITE, 0=exclusive)
+- lpSecurityAttributes: Security descriptor (usually NULL)
+- dwCreationDisposition: Action to take (CREATE_NEW, CREATE_ALWAYS, OPEN_EXISTING, OPEN_ALWAYS, TRUNCATE_EXISTING)
+- dwFlagsAndAttributes: File attributes (FILE_ATTRIBUTE_NORMAL, FILE_FLAG_DELETE_ON_CLOSE, etc.)
+- hTemplateFile: Handle to template file (usually NULL)
+
+Return Value:
+- On success: Returns a handle to the file
+- On error: Returns INVALID_HANDLE_VALUE, use GetLastError() for details
+
+Common Flags:
+- GENERIC_READ: Open for reading
+- GENERIC_WRITE: Open for writing
+- CREATE_NEW: Fails if file exists
+- CREATE_ALWAYS: Creates new file, truncates if exists
+- OPEN_EXISTING: Fails if file doesn't exist
+- OPEN_ALWAYS: Opens if exists, creates if not
+
+Example:
+HANDLE hFile = CreateFileA(
+    "myfile.txt",
+    GENERIC_READ | GENERIC_WRITE,
+    0,
+    NULL,
+    CREATE_ALWAYS,
+    FILE_ATTRIBUTE_NORMAL,
+    NULL
+);
+if (hFile == INVALID_HANDLE_VALUE) {
+    printf("CreateFile failed: %ld\n", GetLastError());
+}

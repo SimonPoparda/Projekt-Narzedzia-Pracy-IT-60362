@@ -1,0 +1,35 @@
+Function: write()
+Location: https://man7.org/linux/man-pages/man2/write.2.html
+
+Description:
+The write() function writes up to count bytes from the buffer pointed to by buf to the file descriptor fd. Data is written from current file offset, which is advanced by the number of bytes written.
+
+Syntax:
+ssize_t write(int fd, const void *buf, size_t count);
+
+Parameters:
+- fd: File descriptor to write to (from open())
+- buf: Pointer to buffer containing data to write
+- count: Number of bytes to write from buffer
+
+Return Value:
+- On success: Returns the number of bytes written (may be less than count)
+- On error: Returns -1, sets errno to indicate the error
+
+Behavior:
+- Writes data to current file position, advances offset by bytes written
+- For regular files: usually writes all requested bytes
+- For sockets/pipes: may write fewer bytes than requested
+- O_APPEND flag: writes always go to end of file
+- If file is full: write may fail with ENOSPC error
+
+Example:
+int fd = open("output.txt", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+const char *data = "Hello, World!";
+ssize_t written = write(fd, data, strlen(data));
+if (written < 0) {
+    perror("write");
+} else {
+    printf("Wrote %ld bytes\n", written);
+}
+close(fd);

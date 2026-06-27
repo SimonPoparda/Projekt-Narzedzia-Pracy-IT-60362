@@ -1,0 +1,48 @@
+Function: WriteFile()
+Location: https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-writefile
+
+Description:
+WriteFile() writes data to a file. The function starts writing at the position indicated by the file pointer. After the write operation, the file pointer is advanced by the number of bytes actually written.
+
+Syntax:
+BOOL WriteFile(
+  HANDLE       hFile,
+  LPCVOID      lpBuffer,
+  DWORD        nNumberOfBytesToWrite,
+  LPDWORD      lpNumberOfBytesWritten,
+  LPOVERLAPPED lpOverlapped
+);
+
+Parameters:
+- hFile: Handle to file (from CreateFile())
+- lpBuffer: Pointer to buffer containing data to write
+- nNumberOfBytesToWrite: Number of bytes to write
+- lpNumberOfBytesWritten: Pointer to variable that receives number of bytes written
+- lpOverlapped: Pointer to OVERLAPPED structure (NULL for synchronous I/O)
+
+Return Value:
+- On success: Returns TRUE
+- On error: Returns FALSE, use GetLastError() for details
+
+Behavior:
+- Writes at current file position, advances file pointer by bytes written
+- May write fewer bytes than requested
+- For file opened with FILE_APPEND_DATA: writes always go to end of file
+- Blocking operation (waits until data written)
+- If file space exhausted: fails with ERROR_DISK_FULL
+
+Example:
+HANDLE hFile = CreateFileA("output.txt", GENERIC_WRITE, 0, NULL,
+                           CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+if (hFile == INVALID_HANDLE_VALUE) {
+    printf("CreateFile failed\n");
+    return;
+}
+const char *data = "Hello, Windows!";
+DWORD dwBytesWritten = 0;
+if (WriteFile(hFile, data, strlen(data), &dwBytesWritten, NULL)) {
+    printf("Wrote %ld bytes\n", dwBytesWritten);
+} else {
+    printf("WriteFile failed: %ld\n", GetLastError());
+}
+CloseHandle(hFile);

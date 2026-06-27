@@ -1,0 +1,47 @@
+Function: CloseHandle()
+Location: https://docs.microsoft.com/en-us/windows/win32/api/handleapi/nf-handleapi-closehandle
+
+Description:
+CloseHandle() closes an open object handle. This function works with many types of handles (files, pipes, processes, threads, events, mutexes, semaphores, etc.). It decrements the reference count for the handle. When the reference count reaches zero, the object is destroyed.
+
+Syntax:
+BOOL CloseHandle(
+  HANDLE hObject
+);
+
+Parameters:
+- hObject: Handle to an open object (from CreateFile(), CreateProcess(), etc.)
+
+Return Value:
+- On success: Returns TRUE
+- On error: Returns FALSE, use GetLastError() for details
+
+Behavior:
+- Closes handle and releases associated system resources
+- Any locks held on the object are released
+- Multiple handles to same object: closing one doesn't affect others
+- After close, handle is invalid and should not be used
+
+Important Notes:
+- Always close handles when done to avoid resource leaks
+- Forgetting to close handles exhausts system handle limit
+- Do not close invalid handles or already closed handles
+- In case of error, errno is still set but handle is closed
+
+Common Errors:
+- ERROR_INVALID_HANDLE: Handle is not valid
+- ERROR_INVALID_PARAMETER: Parameter is invalid
+
+Example:
+HANDLE hFile = CreateFileA("file.txt", GENERIC_READ, FILE_SHARE_READ,
+                           NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+if (hFile == INVALID_HANDLE_VALUE) {
+    printf("CreateFile failed\n");
+    return;
+}
+// ... read/write operations ...
+if (CloseHandle(hFile)) {
+    printf("Handle closed successfully\n");
+} else {
+    printf("CloseHandle failed: %ld\n", GetLastError());
+}

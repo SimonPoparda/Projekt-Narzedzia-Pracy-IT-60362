@@ -1,0 +1,9 @@
+.claude/
+.agents/
+venv/
+__pycache__/
+*.pyc
+*.exe
+*.spec
+build/
+dist/
