@@ -32,7 +32,7 @@ jobs:
       - name: Build executable
         run: pyinstaller --onefile converter.py
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: converter-exe
           path: Projekt-Narzedzia-Pracy-IT-60352/dist/converter.exe
