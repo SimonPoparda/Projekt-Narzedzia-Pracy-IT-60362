@@ -1,6 +1,19 @@
+# Dev tools
 .claude/
 .agents/
 venv/
+skills-lock.json
+
+# Other course work (tracked locally, not in this repo)
+Lista1/
+Lista2/
+Lista3/
+Lista4/
+.devcontainer/
+generate_all.sh
+strace_60362.log
+
+# Build artifacts
 __pycache__/
 *.pyc
 *.exe
