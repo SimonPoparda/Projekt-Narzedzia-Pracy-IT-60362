@@ -1,6 +1,7 @@
 import argparse
 import json
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import yaml
@@ -34,6 +35,42 @@ def load_yaml(path: Path) -> object:
         sys.exit(1)
 
 
+def _elem_to_dict(elem: ET.Element) -> object:
+    children = list(elem)
+    if not children and not elem.attrib:
+        text = elem.text.strip() if elem.text else None
+        return text
+
+    result = {}
+    if elem.attrib:
+        result['@attributes'] = dict(elem.attrib)
+
+    for child in children:
+        tag = child.tag
+        value = _elem_to_dict(child)
+        if tag in result:
+            if not isinstance(result[tag], list):
+                result[tag] = [result[tag]]
+            result[tag].append(value)
+        else:
+            result[tag] = value
+
+    if elem.text and elem.text.strip():
+        result['#text'] = elem.text.strip()
+
+    return result
+
+
+def load_xml(path: Path) -> object:
+    try:
+        tree = ET.parse(path)
+    except ET.ParseError as e:
+        print(f"Error: invalid XML in '{path}': {e}")
+        sys.exit(1)
+    root = tree.getroot()
+    return {root.tag: _elem_to_dict(root)}
+
+
 def save_json(data: object, path: Path) -> None:
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
@@ -45,6 +82,8 @@ def load_file(path: Path) -> object:
         return load_json(path)
     if fmt in ('.yml', '.yaml'):
         return load_yaml(path)
+    if fmt == '.xml':
+        return load_xml(path)
     print(f"Error: loading '{fmt}' not yet implemented.")
     sys.exit(1)
 
