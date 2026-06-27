@@ -163,6 +163,12 @@ def convert(input_path: Path, output_path: Path) -> None:
 
 
 if __name__ == '__main__':
+    if len(sys.argv) == 1:
+        print("Format Converter — usage: converter.exe input.x output.y")
+        print("Supported formats: .json  .xml  .yml  .yaml")
+        print("\nFor a graphical interface, run converter_ui.exe instead.")
+        input("\nPress Enter to exit...")
+        sys.exit(0)
     parser = argparse.ArgumentParser(
         description='Convert data files between JSON, XML, and YAML formats.',
         usage='converter.exe input.x output.y'
