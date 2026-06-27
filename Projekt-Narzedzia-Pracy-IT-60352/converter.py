@@ -6,6 +6,9 @@ from pathlib import Path
 
 import yaml
 
+if sys.version_info < (3, 9):
+    sys.exit("Error: Python 3.9 or higher is required.")
+
 SUPPORTED_FORMATS = {'.json', '.xml', '.yml', '.yaml'}
 
 
@@ -24,6 +27,9 @@ def load_json(path: Path) -> object:
     except json.JSONDecodeError as e:
         print(f"Error: invalid JSON in '{path}': {e}")
         sys.exit(1)
+    except OSError as e:
+        print(f"Error: cannot read '{path}': {e}")
+        sys.exit(1)
 
 
 def load_yaml(path: Path) -> object:
@@ -33,13 +39,16 @@ def load_yaml(path: Path) -> object:
     except yaml.YAMLError as e:
         print(f"Error: invalid YAML in '{path}': {e}")
         sys.exit(1)
+    except OSError as e:
+        print(f"Error: cannot read '{path}': {e}")
+        sys.exit(1)
 
 
 def _elem_to_dict(elem: ET.Element) -> object:
     children = list(elem)
     if not children and not elem.attrib:
-        text = elem.text.strip() if elem.text else None
-        return text
+        # ponytail: `or None` normalizes whitespace-only text to None, same as truly empty
+        return (elem.text.strip() or None) if elem.text else None
 
     result = {}
     if elem.attrib:
@@ -58,6 +67,7 @@ def _elem_to_dict(elem: ET.Element) -> object:
     if elem.text and elem.text.strip():
         result['#text'] = elem.text.strip()
 
+    # ponytail: elem.tail (text after closing tag) is not captured — known limitation for mixed-content XML
     return result
 
 
@@ -67,18 +77,29 @@ def load_xml(path: Path) -> object:
     except ET.ParseError as e:
         print(f"Error: invalid XML in '{path}': {e}")
         sys.exit(1)
+    except OSError as e:
+        print(f"Error: cannot read '{path}': {e}")
+        sys.exit(1)
     root = tree.getroot()
     return {root.tag: _elem_to_dict(root)}
 
 
 def save_json(data: object, path: Path) -> None:
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+    except OSError as e:
+        print(f"Error: cannot write '{path}': {e}")
+        sys.exit(1)
 
 
 def save_yaml(data: object, path: Path) -> None:
-    with open(path, 'w', encoding='utf-8') as f:
-        yaml.dump(data, f, allow_unicode=True, default_flow_style=False)
+    try:
+        with open(path, 'w', encoding='utf-8') as f:
+            yaml.dump(data, f, allow_unicode=True, default_flow_style=False)
+    except OSError as e:
+        print(f"Error: cannot write '{path}': {e}")
+        sys.exit(1)
 
 
 def _dict_to_elem(tag: str, data: object) -> ET.Element:
@@ -107,10 +128,17 @@ def save_xml(data: object, path: Path) -> None:
         print("Error: XML output requires a dict with exactly one root key.")
         sys.exit(1)
     root_tag, root_data = next(iter(data.items()))
-    root_elem = _dict_to_elem(root_tag, root_data)
-    tree = ET.ElementTree(root_elem)
-    ET.indent(tree)
-    tree.write(path, encoding='unicode', xml_declaration=False)
+    try:
+        root_elem = _dict_to_elem(root_tag, root_data)
+        tree = ET.ElementTree(root_elem)
+        ET.indent(tree)
+        tree.write(path, encoding='utf-8', xml_declaration=True)
+    except OSError as e:
+        print(f"Error: cannot write '{path}': {e}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error: failed to serialize data to XML: {e}")
+        sys.exit(1)
 
 
 def load_file(path: Path) -> object:
@@ -149,8 +177,8 @@ def parse_args():
     parser.add_argument('output', type=Path, help='destination file (json/xml/yml/yaml)')
     args = parser.parse_args()
 
-    if not args.input.exists():
-        print(f"Error: input file '{args.input}' does not exist.")
+    if not args.input.is_file():
+        print(f"Error: '{args.input}' does not exist or is not a file.")
         sys.exit(1)
 
     get_format(args.input)
