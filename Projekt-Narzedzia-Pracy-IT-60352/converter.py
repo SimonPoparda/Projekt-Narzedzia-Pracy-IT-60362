@@ -39,6 +39,11 @@ def save_json(data: object, path: Path) -> None:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
+def save_yaml(data: object, path: Path) -> None:
+    with open(path, 'w', encoding='utf-8') as f:
+        yaml.dump(data, f, allow_unicode=True, default_flow_style=False)
+
+
 def load_file(path: Path) -> object:
     fmt = get_format(path)
     if fmt == '.json':
@@ -53,6 +58,9 @@ def save_file(data: object, path: Path) -> None:
     fmt = get_format(path)
     if fmt == '.json':
         save_json(data, path)
+        return
+    if fmt in ('.yml', '.yaml'):
+        save_yaml(data, path)
         return
     print(f"Error: saving '{fmt}' not yet implemented.")
     sys.exit(1)
