@@ -5,6 +5,7 @@ on:
     - cron: '0 10 * * 1'
   push:
     branches:
+      - master
       - main
   workflow_dispatch:
 
@@ -25,9 +26,6 @@ jobs:
 
       - name: Install dependencies
         run: .\installResources.ps1
-
-      - name: Install PyInstaller
-        run: pip install pyinstaller
 
       - name: Build executable
         run: pyinstaller --onefile converter.py
