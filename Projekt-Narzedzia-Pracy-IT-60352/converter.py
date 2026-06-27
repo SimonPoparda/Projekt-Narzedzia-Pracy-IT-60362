@@ -1,4 +1,5 @@
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -11,6 +12,23 @@ def get_format(path: Path) -> str:
         print(f"Error: unsupported format '{ext}'. Supported: {', '.join(sorted(SUPPORTED_FORMATS))}")
         sys.exit(1)
     return ext
+
+
+def load_json(path: Path) -> object:
+    try:
+        with open(path, encoding='utf-8') as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        print(f"Error: invalid JSON in '{path}': {e}")
+        sys.exit(1)
+
+
+def load_file(path: Path) -> object:
+    fmt = get_format(path)
+    if fmt == '.json':
+        return load_json(path)
+    print(f"Error: loading '{fmt}' not yet implemented.")
+    sys.exit(1)
 
 
 def parse_args():
@@ -34,6 +52,6 @@ def parse_args():
 
 if __name__ == '__main__':
     input_path, output_path = parse_args()
-    print(f"Input:  {input_path} ({get_format(input_path)})")
-    print(f"Output: {output_path} ({get_format(output_path)})")
+    data = load_file(input_path)
+    print(f"Loaded {type(data).__name__} from '{input_path}'.")
     print("Conversion not yet implemented.")
